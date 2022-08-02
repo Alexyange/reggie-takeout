@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="../../js/echarts.js"></script>
+    <link rel="stylesheet" href="../../styles/common.css"/>
+    <link rel="stylesheet" href="../../styles/page.css"/>
+    <style>
+        #member-app .notAdmin::after {
+            border: 0 !important;
+
+        }
+
+        .tableBar {
+            justify-content: flex-start !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container" id="member-app">
+    <div class="container">
+        <div class="tableBar">
+            <el-date-picker v-model="orderTime"
+                            clearable
+                            value-format="yyyy-MM-dd HH:mm:ss"
+                            type="datetimerange"
+                            placeholder="选择日期"
+                            range-separator="至"
+                            start-placeholder="开始日期"
+                            end-placeholder="结束日期"
+                            :default-time="['00:00:00', '23:59:59']"
+                            style="width: 400px;margin-left: 20px;margin-right: 20px;"
+            ></el-date-picker>
+            <el-button type="primary" class="search-btn" @click="init">查询</el-button>
+        </div>
+        <div id="main" style="width: 600px;height:400px;margin-left: auto;margin-right: auto;"></div>
+        <h1>套餐一共销售了：￥{{amountcount}}</h1>
+    </div>
+</div>
+</body>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../plugins/element-ui/index.js"></script>
+<!-- 引入axios -->
+<script src="../../plugins/axios/axios.min.js"></script>
+<script src="../../js/request.js"></script>
+<script src="../../api/category.js"></script>
+<script>
+    new Vue({
+        el: '#member-app',
+        data() {
+            return {
+                reportData: [],
+                orderTime: '',
+                beginTime: '',
+                endTime: '',
+                amountcount: ''
+            }
+        },
+        watch: {
+            orderTime(val) {
+                if (val && val.length >= 2) {
+                    this.beginTime = val[0]
+                    this.endTime = val[1]
+                } else {
+                    this.beginTime = ''
+                    this.endTime = ''
+                }
+            }
+        },
+        mounted() {
+            this.init()
+            this.initamount()
+        },
+        methods: {
+            async initamount() {
+                const res = await getAmount2({beginTime: this.beginTime, endTime: this.endTime})
+                if (res.code === 1) {
+                    this.amountcount = res.data;
+                } else {
+                    this.$message.error('请求出错了：' + err)
+                }
+            },
+            async init() {
+                const res = await getData2({beginTime: this.beginTime, endTime: this.endTime})
+                if (res.code === 1) {
+                    this.initamount()
+                    this.reportData = res.data;
+                    setTimeout(() => {
+                        this.draw();
+                    }, 1000);
+                } else {
+                    this.$message.error('请求出错了：' + err)
+                }
+            },
+            draw() {
+                var myChart = echarts.init(document.getElementById('main'));
+                myChart.setOption({
+                    tooltip: {
+                        trigger: 'item'
+                    },
+                    legend: {
+                        top: '5%',
+                        left: 'center'
+                    },
+                    series: [{
+                        name: '套餐统计',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '40',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: this.reportData
+                    }]
+                });
+            }
+        }
+    })
+</script>
+</html>

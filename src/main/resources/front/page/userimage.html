@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/user2.css"/>
+</head>
+<body>
+<div id="user" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>修改头像
+        </div>
+    </div>
+    <div class="divContent" style="text-align: center;">
+        <img src="../images/headPage.png" style="padding-bottom: 15px;padding-top: 20px;"/>
+        <el-upload
+                class="upload-demo"
+                action="https://jsonplaceholder.typicode.com/posts/"
+                :on-preview="handlePreview"
+                :on-remove="handleRemove"
+                :before-remove="beforeRemove"
+                multiple
+                :limit="3"
+                :on-exceed="handleExceed"
+                :file-list="fileList">
+            <el-button size="small" type="primary">点击上传</el-button>
+            <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
+        </el-upload>
+    </div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../api/login.js"></script>
+<script>
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                msgFlag: false,
+            }
+        },
+        computed: {},
+        created() {
+            this.userPhone = sessionStorage.getItem("userPhone")
+        },
+        mounted() {
+
+        },
+        methods: {
+            goBack() {
+                history.go(-1)
+            },
+
+        }
+    })
+</script>
+</body>
+</html>

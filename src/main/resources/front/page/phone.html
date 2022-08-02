@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/user2.css"/>
+</head>
+<body>
+<div id="user" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>修改手机号
+        </div>
+    </div>
+    <div class="divContent">
+        <van-form @submit="onSubmit">
+            <van-cell-group>
+                <van-field v-model="phone" required :rules="[{ required: true,pattern, message: '请输入正确的手机号码' }]"
+                           label="手机号码" placeholder="请输入手机号码"/>
+            </van-cell-group>
+            <div style="padding-top: 15px;">
+                <van-button round block type="info" native-type="submit">保存</van-button>
+            </div>
+        </van-form>
+    </div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../api/login.js"></script>
+<script>
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                msgFlag: false,
+                phone: '',
+                id: '',
+                pattern: /^1[3-9]\d{9}$/
+            }
+        },
+        computed: {},
+        created() {
+            this.userPhone = sessionStorage.getItem("userPhone")
+        },
+        mounted() {
+
+        },
+        methods: {
+            async onSubmit(values) {
+                const params = {
+                    phone: this.userPhone
+                }
+                const res1 = await getUser(params)
+                if (res1.code === 1) {
+                    this.id = res1.data.id;
+                }
+                const userinfo = {
+                    id: this.id,
+                    phone: this.phone
+                }
+                const res = await updateByPhone(userinfo)
+                if (res.code === 1) {
+                    sessionStorage.setItem("userPhone", this.phone)
+                    window.requestAnimationFrame(() => {
+                        window.location.href = 'userInfo.html'
+                        this.phone = ''
+                    })
+                }
+            },
+            goBack() {
+                history.go(-1)
+            },
+
+        }
+    })
+</script>
+</body>
+</html>

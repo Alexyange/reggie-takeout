@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:float="http://www.w3.org/1999/xhtml">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="images/favico.ico">
+    <!--不同屏幕尺寸根字体设置-->
+    <script src="js/base.js"></script>
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../backend/plugins/element-ui/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="styles/vant.min.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="styles/index.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="styles/complainconfig.css"/>
+</head>
+<body>
+
+<div id="main" class="app">
+    <div class="divHead">
+        <img src="images/src=http---pic.51yuansu.com-pic2-cover-00-48-46-5815ed98f269c_610.jpg&refer=http---pic.51yuansu.jpg"
+             height="30" width="30" @click="toUserPage"/>
+    </div>
+    <div class="divBody">
+        <div class="divType">
+            <ul>
+                <li @click="Complaint(1)">
+                    客服
+                    <p v-if="allpeople.includes(1)">有新消息</p>
+                </li>
+                <li v-for="(item,i) in friend" @click="Complaint(item.friendId)">
+                    {{friend[i].friendName}}
+                    <p v-if="allpeople.includes(item.friendId)">有新消息</p>
+                </li>
+                <li @click="selectVisible=true">
+                    添加好友
+                </li>
+            </ul>
+        </div>
+        <el-dialog
+                title="添加"
+                :visible.sync="selectVisible"
+                width="60%"
+                :before-close="handleClose">
+        <span slot="footer" class="dialog-footer">
+    <el-form :label-position="labelPosition" label-width="80px" :model="tianjia">
+        <el-form-item label="想要添加的id">
+            <el-input v-model="tianjia"></el-input>
+        </el-form-item>
+        <el-form-item>
+            <el-button type="primary" @click="tianjiax()">添加</el-button>
+        </el-form-item>
+    </el-form>
+  </span>
+
+        </el-dialog>
+        <div class="divMenu">
+            <div>
+                <div v-for="(item,i) in complaint">
+                    <div v-if="complaint[i].userId != userid">
+                        <el-col>
+                            <el-card shadow="never">
+                                <p align="center"> {{complaint[i].time}}</p>
+                                {{complaint[i].content}}
+                            </el-card>
+                        </el-col>
+                    </div>
+                    <div v-else align="right">
+                        <el-col>
+                            <el-card shadow="never">
+                                <p align="center"> {{complaint[i].time}}</p>
+                                {{complaint[i].content}}
+                            </el-card>
+                        </el-col>
+                    </div>
+                </div>
+                <el-input
+                        type="textarea"
+                        :autosize="{ minRows: 2, maxRows: 4}"
+                        placeholder="请输入内容"
+                        v-model="textarea">
+                </el-input>
+                <el-button type="primary" v-on:click="send(textarea)">提交</el-button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant样式 -->
+<script src="js/vant.min.js"></script>
+<!-- 引入axios -->
+<script src="../backend/plugins/axios/axios.min.js"></script>
+<script src="js/request.js"></script>
+<script src="js/common.js"></script>
+<script src="api/main.js"></script>
+</body>
+<script>
+    vue = new Vue({
+        el: '#main',
+        data() {
+            return {
+                labelPosition: 'right',
+                selectVisible: false,
+                complaint: [],
+                friend: [],
+                userid: "0",
+                textarea: '',
+                friendname: "1",
+                websocket1: null,
+                allpeople: [],
+                tianjia: ""
+            }
+        },
+        computed: {},
+        created() {
+        },
+        watquerySech: {},
+        mounted() {
+
+            $axios({
+                'url': '/friend/list',
+                'method': 'get',
+            }).then(res => {
+                vue.friend = res.data,
+                    vue.friendname = 1;
+            });
+            $axios({
+                'url': '/complaint/list/1',
+                'method': 'get',
+            }).then(res => {
+                vue.complaint = res.data
+            });
+            $axios({
+                'url': '/user/getid',
+                'method': 'get',
+            }).then(res => {
+                vue.userid = res.data;
+                vue.websocket();
+            });
+
+
+        },
+        methods: {
+            handleClose(done) {
+                done();
+            },
+
+            websocket() {
+                var websocket = null;
+                //判断当前浏览器是否支持WebSocket
+                websocket = new WebSocket("ws://localhost:8080/websocket/" + this.userid + "/" + this.friendname);
+                this.websocket1 = websocket;
+                //连接发生错误的回调方法
+                websocket.onerror = function () {
+                    setMessageInnerHTML("WebSocket连接发生错误1");
+                };
+
+                //连接成功建立的回调方法
+                websocket.onopen = function () {
+                    setMessageInnerHTML("WebSocket连接成功");
+                }
+
+                //接收到消息的回调方法
+                websocket.onmessage = function (event) {
+                    setMessageInnerHTML(event.data);
+                    if (event.data != vue.friendname && !vue.allpeople.includes(event.data)) vue.allpeople.unshift(event.data);
+                }
+
+                //连接关闭的回调方法
+                websocket.onclose = function () {
+                    setMessageInnerHTML("WebSocket连接关闭");
+                }
+
+                //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+                window.onbeforeunload = function () {
+                    closeWebSocket();
+                }
+
+                //将消息显示在网页上
+                function setMessageInnerHTML(innerHTML) {
+                    vue.flash();
+                }
+
+                //关闭WebSocket连接
+                function closeWebSocket() {
+                    websocket.close();
+                }
+
+                //发送消息
+                function send(content) {
+                    websocket.send(content);
+                    vue.flash();
+                }
+            },
+            send(content) {
+                vue.websocket1.send(content);
+                vue.flash();
+            },
+            tianjiax() {
+                $axios({
+                    'url': '/friend/add?id=' + vue.tianjia,
+                    'method': 'get',
+                }).then(res => {
+                    if (res.code != 1) alert(res.msg);
+                    this.flash();
+                });
+            },
+            flash() {
+                $axios({
+                    'url': '/friend/list',
+                    'method': 'get',
+                }).then(res => {
+                    vue.friend = res.data
+                });
+                $axios({
+                    'url': '/complaint/list/' + vue.friendname,
+                    'method': 'get',
+                }).then(res => {
+                    vue.complaint = res.data
+                });
+            },
+            //点击设置新的会话对象
+            Complaint(id) {
+                this.websocket1.close();
+                vue.friendname = id;
+                vue.removeAaary(vue.allpeople, vue.friendname);
+                $axios({
+                    'url': '/complaint/list/' + id,
+                    'method': 'get',
+                }).then(res => {
+                    vue.complaint = res.data
+                });
+                this.websocket();
+                vue.flash();
+            },
+            toUserPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = '/front/page/user.html'
+                })
+            },
+            removeAaary(_arr, _obj) {
+                var length = _arr.length;
+                for (var i = 0; i < length; i++) {
+                    if (_arr[i] == _obj) {
+                        if (i == 0) {
+                            _arr.shift(); //删除并返回数组的第一个元素
+                            return _arr;
+                        } else if (i == length - 1) {
+                            _arr.pop();  //删除并返回数组的最后一个元素
+                            return _arr;
+                        } else {
+                            _arr.splice(i, 1); //删除下标为i的元素
+                            return _arr;
+                        }
+                    }
+                }
+            }
+        }
+    })
+</script>
+</html>

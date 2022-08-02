@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/user2.css"/>
+</head>
+<body>
+<div id="user" class="app">
+
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>会员首页
+        </div>
+    </div>
+    <div class="divContent" style="text-align: center;">
+        <div class="divdisVIPLinks" v-if="userInfo.members==0">
+            <div class="item">
+                <span class="title">吃货卡</span>
+            </div>
+            <div class="item">
+                <span class="couponstitle">可用券</span>
+                <span class="beantitle">瑞吉豆</span>
+            </div>
+            <div class="item" style="float: right;">
+                <img class="imgdisvip" src="../images/disvip.png"/>
+            </div>
+            <div class="item">
+                <span class="coupons">{{couponsCount}}</span>
+                <span class="bean">{{userInfo.integral}}</span>
+            </div>
+            <div class="item">
+                <span class="beanfoot">升级瑞吉吃货卡享5倍返豆</span>
+            </div>
+        </div>
+        <div class="divVIPLinks" v-if="userInfo.members==1">
+            <div class="item">
+                <span class="title">瑞吉吃货卡</span>
+            </div>
+            <div class="item">
+                <span class="couponstitle">可用券</span>
+                <span class="beantitle">瑞吉豆</span>
+            </div>
+            <div class="item" style="float: right;">
+                <img class="imgdisvip" src="../images/goldvip.png"/>
+            </div>
+            <div class="item">
+                <div @click="toCouponsListPage"><span class="coupons">{{couponsCount}}</span></div>
+                <span class="bean">{{userInfo.integral}}</span>
+            </div>
+            <div class="item">
+                <span class="beanfoot">升级瑞吉吃货卡享5倍返豆</span>
+            </div>
+        </div>
+
+        <div class="divConpousLinks" v-if="userInfo.members==0">
+            <div class="item">
+                <span class="title">专属权益|优惠券兑换</span>
+            </div>
+            <van-row gutter="20">
+                <van-col span="8"><img src="../coupons/2wumenkan.png"/></van-col>
+                <van-col span="8"><img src="../coupons/5wumenkan.png"/></van-col>
+                <van-col span="8"><img src="../coupons/100jian10.png"/></van-col>
+                <van-col span="8">豆子：50</van-col>
+                <van-col span="8">豆子：100</van-col>
+                <van-col span="8">豆子：150</van-col>
+                <van-col span="8" style="margin-top: 10px;">
+                    <van-button :disabled="userInfo.integral<50?true:false" size="mini"
+                                @click="addcoupons('2wumenkan','50')" round type="danger">立即兑
+                    </van-button>
+                    </van-button></van-col>
+                <van-col span="8" style="margin-top: 10px;">
+                    <van-button :disabled="userInfo.integral<100?true:false" size="mini"
+                                @click="addcoupons('5wumenkan','100')" round type="danger">立即兑
+                    </van-button>
+                </van-col>
+                <van-col span="8" style="margin-top: 10px;">
+                    <van-button :disabled="userInfo.integral<150?true:false" size="mini"
+                                @click="addcoupons('100-10youhuiquan','150')" round type="danger">立即兑
+                    </van-button>
+                </van-col>
+            </van-row>
+        </div>
+        <div class="divConpousLinks" v-if="userInfo.members==1">
+            <div class="item">
+                <span class="title">专属权益|优惠券兑换</span>
+            </div>
+            <van-row gutter="20">
+                <van-col span="8"><img src="../coupons/10wumenkan.png"/></van-col>
+                <van-col span="8"><img src="../coupons/15wumenkan.png"/></van-col>
+                <van-col span="8"><img src="../coupons/50jian10.png"/></van-col>
+                <van-col span="8">豆子：50</van-col>
+                <van-col span="8">豆子：100</van-col>
+                <van-col span="8">豆子：150</van-col>
+                <van-col span="8" style="margin-top: 10px;">
+                    <van-button :disabled="userInfo.integral<50?true:false" @click="addcoupons('10wumenkan','50')"
+                                size="mini" round type="danger">立即兑
+                    </van-button>
+                    </van-button></van-col>
+                <van-col span="8" style="margin-top: 10px;">
+                    <van-button :disabled="userInfo.integral<100?true:false" @click="addcoupons('15wumenkan','100')"
+                                size="mini" round type="danger">立即兑
+                    </van-button>
+                </van-col>
+                <van-col span="8" style="margin-top: 10px;">
+                    <van-button :disabled="userInfo.integral<150?true:false"
+                                @click="addcoupons('50-10youhuiquan','150')" size="mini" round type="danger">立即兑
+                    </van-button>
+                </van-col>
+            </van-row>
+        </div>
+        <div class="divBuyVIPLinks" v-if="userInfo.members==0" @click="buyVIP">
+            <div class="item">
+                <span class="title">购买瑞吉外卖卡！￥15元特惠</span>
+            </div>
+            <div class="item">
+                <img src="../images/goldvip.png"/>
+                <span class="buyviptitle">还没有瑞吉吃货卡？</span>
+            </div>
+            <div class="item" style="float: left;">
+            </div>
+            <div class="item11">
+                <span c>赶快来购买瑞吉吃货卡,纵享至尊荣耀</span>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../api/login.js"></script>
+<script>
+
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                userInfo: {
+                    userName: '',
+                    sex: '',
+                    image: '',
+                    IdNum: '',
+                    id: '',
+                    integral: '',
+                    members: ''
+                },
+                couponsCount: '',
+            }
+        },
+        computed: {
+            getBean(bean) {
+                if (this.userInfo.integral < bean) {
+                    return false;
+                }
+                return true;
+            },
+        },
+        created() {
+            this.userPhone = sessionStorage.getItem("userPhone")
+            this.getByUser()
+            this.getItem()
+        },
+        mounted() {
+
+        },
+        methods: {
+            toCouponsListPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'coupons.html'
+                })
+            },
+            async getItem() {
+                const res = await getCoupons();
+                if (res.code === 1) {
+                    this.couponsCount = res.data.length;
+                }
+            },
+            async buyVIP() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = '/aliapy/vippay'
+                })
+            },
+            async getByUser() {
+                const params = {
+                    phone: this.userPhone
+                }
+                const res = await getUser(params);
+                if (res.code === 1) {
+                    this.userInfo.userName = res.data.name;
+                    this.userInfo.id = res.data.id;
+                    this.userInfo.idNum = res.data.idNumber;
+                    this.userInfo.sex = res.data.sex;
+                    this.userInfo.image = res.data.avatar;
+                    this.userInfo.integral = res.data.integral;
+                    this.userInfo.members = res.data.members;
+                }
+            },
+
+            async addcoupons(data, bean) {
+                const params = {
+                    code: data,
+                };
+                const res1 = await addCodeCoupons(params);
+                if (res1.code === 1) {
+                    this.$toast({type: 'success', message: '兑换成功'});
+                }
+                const param = {
+                    phone: this.userPhone,
+                    integral: this.userInfo.integral - bean
+                }
+                const res2 = await updateByPhone(param);
+                if (res2.code === 1) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+            },
+            goBack() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'user.html'
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>

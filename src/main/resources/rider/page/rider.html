@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁骑手端</title>
+    <link rel="icon" href="../../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/rider.css"/>
+    <style type="text/css">
+        html {
+            height: 100%
+        }
+
+        body {
+            height: 100%;
+            margin: 0px;
+            padding: 0px
+        }
+
+        #mapapp {
+            height: 100%
+        }
+    </style>
+</head>
+<body>
+<div id="user" class="app">
+    <van-pull-refresh v-model="isLoading1" @refresh="onRefresh">
+        <div class="divContent">
+            <div class="divLinks">
+                <div style="height: 76rem;font-size: 10rem;">
+                    <van-grid :border="false" :column-num="3">
+                        <van-grid-item>
+                            <van-image
+                                    round
+                                    width="60rem"
+                                    height="60rem"
+                                    :src="getImage(rider.pic)"
+                            />
+                        </van-grid-item>
+                        <van-grid-item>
+                            <h1>{{rider.name}}</h1>
+                        </van-grid-item>
+                        <van-grid-item>
+                            <h1>账户余额</h1>
+                            <div style="font-size: 20px;margin-top: 10px;">￥{{rider.balance}}</div>
+                        </van-grid-item>
+                    </van-grid>
+                </div>
+                <div style="font-size: 10rem;">
+                    <van-grid :border="false" :column-num="3">
+                        <van-grid-item>
+                            <h1>已完成</h1>
+                            <div style="font-size: 20px;margin-top: 10px;">{{completesum}}</div>
+                        </van-grid-item>
+                        <van-grid-item>
+                            <h1>已赚到</h1>
+                            <div style="font-size: 20px;margin-top: 10px;">￥{{rider.balance}}</div>
+                        </van-grid-item>
+                        <van-grid-item>
+                            <h1>信用度</h1>
+                            <div style="font-size: 20px;margin-top: 10px;">{{rider.credit}}</div>
+                        </van-grid-item>
+                    </van-grid>
+                </div>
+            </div>
+        </div>
+    </van-pull-refresh>
+
+    <van-pull-refresh v-model="isLoading2" @refresh="onRefresh">
+        <div class="divContent">
+            <div class="divLinksOrders">
+                <van-list
+                        v-model="loading"
+                        :finished="finished"
+                        finished-text="没有更多了"
+                        @load="onLoad"
+                >
+                    <van-cell v-for="item in list" style="height: 160rem;">
+                        <template slot-scope="scope">
+                            <div style="float: left;">
+                                <div>
+                                    <p style="font-size: 20px;width: 200px;font-weight: bold;">{{item.address1}}</p>
+                                </div>
+                                <div>
+                                    <div style="text-align: center;font-size: 15px;margin-top: 5px;margin-bottom: 5px;">
+                                        送到
+                                    </div>
+                                </div>
+                                <div>
+                                    <p style="font-size: 20px;width: 200px;font-weight: bold;">{{item.address2}}</p>
+                                </div>
+                                <div>
+                                    <div></div>
+                                </div>
+                            </div>
+                            <div style="position: absolute;right: 15px;font-size: 15px;">
+                                配送费：￥<span style="color: red;font-size: 20px;">{{item.tips}}</span>
+                                <div style="margin-top: 40px;">
+                                    <van-button size="large" type="danger" @click="addOrder(item.orderId,item.tips)">
+                                        抢单
+                                    </van-button>
+                                </div>
+                            </div>
+                            <div style="clear:both;margin-top: 150px;">
+                                <van-divider
+                                        :style="{ color: '#3389fa', borderColor: '#3389fa'}"
+                                ></van-divider>
+                            </div>
+                        </template>
+                    </van-cell>
+                </van-list>
+            </div>
+        </div>
+    </van-pull-refresh>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/jquery-3.6.0.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/rider.js"></script>
+<script>
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                list: [],
+                loading: false,
+                finished: false,
+                isLoading1: false,
+                isLoading2: false,
+                src: '../../backend/favicon.ico',
+                rider: {},
+                completesum: ''
+            }
+        },
+        created() {
+        },
+        mounted() {
+            this.getOrder();
+            this.getUserData();
+            this.getCompleteSum();
+        },
+        methods: {
+            async getCompleteSum() {
+                const res = await getCompleteSum()
+                if (res.code === 1) {
+                    this.completesum = res.data;
+                }
+            },
+            getImage(image) {
+                return `/common/download?name=${this.rider.pic}`
+            },
+            async addOrder(orderId, tips) {
+                const res = await addOrder({orderId: orderId, riderId: this.rider.id, tips: tips})
+                if (res.code === 1) {
+                    this.$toast({type: 'success', message: '接单成功'});
+                    this.getOrder();
+                }
+            },
+            goBack() {
+                history.go(-1)
+            },
+            async getUserData() {
+                const phone = sessionStorage.getItem("userPhone");
+                const res = await getUserData(phone);
+                if (res.code === 1) {
+                    this.rider = res.data;
+                }
+            },
+            async getOrder() {
+                const res = await getAllData();
+                if (res.code === 1) {
+                    this.list = res.data;
+                }
+            },
+            onLoad() {
+                // 异步更新数据
+                // setTimeout 仅做示例，真实场景中一般为 ajax 请求
+                setTimeout(() => {
+                    for (let i = 0; i < 5; i++) {
+                        this.getOrder();
+                    }
+                    // 加载状态结束
+                    this.loading = false;
+                    // 数据全部加载完成
+                    if (this.list.length >= 1) {
+                        this.finished = true;
+                    }
+                }, 1000);
+            },
+            onRefresh() {
+                setTimeout(() => {
+                    this.$toast('刷新成功');
+                    this.isLoading1 = false;
+                    this.isLoading2 = false;
+                    this.getOrder();
+                }, 1000);
+            },
+        }
+    })
+</script>
+</body>
+</html>

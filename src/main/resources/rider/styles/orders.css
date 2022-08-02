@@ -1,0 +1,17 @@
+#user {
+    height: 100%;
+}
+
+
+#user .divContent {
+    height: calc(100% - 174rem);
+    overflow-y: auto;
+}
+
+#user .divLinks {
+    height: 608rem;
+    opacity: 1;
+    background: #ffffff;
+    padding-left: 17rem;
+    padding-right: 11rem;
+}

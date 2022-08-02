@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/user1.css"/>
+</head>
+<body>
+<div id="user" class="app">
+    <van-pull-refresh v-model="isLoading" @refresh="onRefresh">
+        <div class="divHead">
+            <div class="divTitle">
+                <i class="el-icon-arrow-left" @click="goBack"></i>个人中心
+            </div>
+            <div class="divUser" @click="goUserInfo">
+                <div style="padding-left: 20px">
+                    <van-image
+                            round
+                            width="70rem"
+                            height="70rem"
+                            :src="getImage(userInfo.image)"
+                            style="padding-bottom: 10px"
+                    />
+                </div>
+                <div class="desc" style="padding-left: 20px">
+                    <div class="divName">{{userInfo.userName}}<img v-if="userInfo.sex==0" src="../images/women.png"/><img
+                            v-if="userInfo.sex==1" src="../images/men.png"/></div>
+                    <div class="divPhone">{{userPhone}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="divContent">
+            <div class="divDisVIP" v-if="userInfo.members === 0">
+                <div class="item" @click="toMembersPage">
+                    <img src="../images/disvip.png"/>
+                    <span class="title">吃货卡</span>
+                    <div class="spilt"></div>
+                    <span class="content1">瑞吉豆：{{userInfo.integral}}</span>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+            </div>
+            <div class="divVIP" v-if="userInfo.members === 1">
+                <div class="item" @click="toMembersPage">
+                    <img src="../images/goldvip.png"/>
+                    <span class="title">瑞吉吃货卡</span>
+                    <span class="content1">瑞吉豆：{{userInfo.integral}}</span>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+            </div>
+            <div class="divLinks">
+                <div class="item" @click="toAddressPage">
+                    <img src="../images/locations.png"/>
+                    <span>地址管理</span>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item" @click="toOrderPage">
+                    <img src="../images/orders.png"/>
+                    <span>历史订单</span>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item" @click="toTuLingPage">
+                    <img src="../images/service.png"/>
+                    <span>我的客服</span>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+            </div>
+            <div class="divOrders" v-if="order[0]">
+                <div class="title">最新订单</div>
+                <div class="timeStatus">
+                    <span>{{order[0].orderTime}}</span>
+                    <span>{{getStatus(order[0].status)}}</span>
+                    <!-- <span>正在派送</span> -->
+                </div>
+                <div class="dishList">
+                    <div v-for="(item,index) in order[0].orderDetails" :key="index" class="item">
+                        <span>{{item.name}}</span>
+                        <span>x{{item.number}}</span>
+                    </div>
+                </div>
+                <div class="result">
+                    <span>共{{order[0].sumNum}} 件商品,实付</span>
+                    <span class="price">￥{{order[0].amount}}</span>
+                </div>
+                <div class="btn" style="float: left;" v-if="order[0].status === 4 && num == 0">
+                    <div class="btnAgain" @click="show = true">评论</div>
+                </div>
+                <div class="btn" style="float: left;" v-if="order[0].status === 4 && num == 1">
+                    <div class="btnAgain" @click="show = true">追加评论</div>
+                </div>
+                <div class="btn" v-if="order[0].status === 4">
+                    <div class="btnAgain" @click="addOrderAgain">再来一单</div>
+                </div>
+                <van-dialog v-model:show="show" title="老板！请给出你的建议！" :before-close="beforeClose" show-cancel-button>
+                    <div style="margin-left: 50px;margin-top: 30px;">您的评分:
+                        <el-rate
+                                v-model="value"
+                                show-text
+                                :texts="['狗都不吃', '勉强能吃', '一般', '好吃', '非常好吃']"
+                                :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
+                                style="margin-left: 50px;"
+                        >
+                        </el-rate>
+                    </div>
+                    <div style="margin-left: 50px;margin-top: 30px; width: 150px;margin-bottom: 30px;">您的评价:
+                        <el-input
+                                type="textarea"
+                                show-word-limit
+                                :autosize="{ minRows: 2, maxRows: 4}"
+                                placeholder="请输入内容"
+                                style="margin-left: 50px;"
+                                v-model="comments">
+                        </el-input>
+                        </el-rate>
+                    </div>
+                </van-dialog>
+            </div>
+            <div class="quitLogin" @click="toPageLogin">
+                退出登录
+            </div>
+        </div>
+    </van-pull-refresh>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../api/login.js"></script>
+<script>
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                isLoading: false,
+                show: false,
+                value: null,
+                comments: '',
+                num: undefined,
+                userInfo: {
+                    userName: '',
+                    sex: '',
+                    image: '',
+                    IdNum: '',
+                    id: '',
+                    integral: '',
+                    members: ''
+                },
+                form: {
+                    phone: '',
+                    code: ''
+                },
+                msgFlag: false,
+                order: [{
+                    orderTime: '',//下单时间
+                    status: undefined,//订单状态 1已结账，2未结账，3已退单，4已完成，5已取消
+                    orderDetails: [{
+                        name: '',//菜品名称
+                        number: undefined,//数量
+                    }],//明细
+                    amount: undefined,//实收金额
+                    sumNum: 0,//菜品总数
+                    id: ''
+                }],
+            }
+        },
+        computed: {},
+        created() {
+            this.userPhone = sessionStorage.getItem("userPhone")
+            this.initData()
+            this.getByUser()
+        },
+        mounted() {
+
+        },
+        methods: {
+            onRefresh() {
+                setTimeout(() => {
+                    this.$toast('刷新成功');
+                    this.isLoading = false;
+                    this.initData()
+                    this.getByUser()
+                }, 1000);
+            },
+            async getNum() {
+                const params = {
+                    orderId: this.order[0].id,
+                }
+                const res = await getCommentsNum(params);
+                if (res.code === 1) {
+                    this.num = res.data;
+                }
+            },
+            beforeClose: async function (action, done) { // 点击事件 - 备注按钮提示框
+                if (action === 'confirm') { // 确认
+                    console.log('[点击事件 - 备注] - 确认');
+                    const params = {
+                        orderId: this.order[0].id,
+                        content: this.comments,
+                        commentsnum: this.value
+                    }
+                    const res = await addComments(params);
+                    if (res.code === 1) {
+                        done();
+                        this.$toast({type: 'success', message: '评价成功'});
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    }
+                    // 关闭提示框
+                } else if (action === 'cancel') { // 取消
+                    console.log('[点击事件 - 备注] - 取消');
+                    done(); // 关闭提示框
+                }
+            },
+            getImage(image) {
+                return `/common/download?name=${image}`
+            },
+            async getByUser() {
+                const params = {
+                    phone: this.userPhone
+                }
+                const res = await getUser(params);
+                if (res.code === 1) {
+                    this.userInfo.userName = res.data.name;
+                    this.userInfo.id = res.data.id;
+                    this.userInfo.idNum = res.data.idNumber;
+                    this.userInfo.sex = res.data.sex;
+                    this.userInfo.image = res.data.avatar;
+                    this.userInfo.integral = res.data.integral;
+                    this.userInfo.members = res.data.members;
+                }
+            },
+            goBack() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = '/front/index.html'
+                })
+            },
+            goUserInfo() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'userinfo.html'
+                })
+            },
+            toTuLingPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = '/front/complain.html'
+                })
+            },
+            toMembersPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'members.html'
+                })
+            },
+            toAddressPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'address.html'
+                })
+            },
+            toOrderPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'order.html'
+                })
+            },
+            initData() {
+                this.getLatestOrder()
+            },
+            async getLatestOrder() {
+                const params = {
+                    page: 1,
+                    pageSize: 1
+                }
+                const res = await orderPagingApi(params)
+                if (res.code === 1) {
+                    this.order = res.data.records
+                    if (this.order && this.order[0].orderDetails) {
+                        let number = 0
+                        this.order[0].orderDetails.forEach(item => {
+                            number += item.number
+                        })
+                        this.order[0].sumNum = number
+                    }
+                    this.getNum()
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            getStatus(status) {
+                let str = ''
+                switch (status) {
+                    case 1:
+                        str = '待付款'
+                        break;
+                    case 2:
+                        str = '正在派送'
+                        break;
+                    case 3:
+                        str = '已派送'
+                        break;
+                    case 4:
+                        str = '已完成'
+                        break;
+                    case 5:
+                        str = '已取消'
+                        break;
+
+                }
+                return str
+            },
+            async addOrderAgain() {
+                const res = await orderAgainApi({id: this.order[0].id})
+                if (res.code === 1) {
+                    window.requestAnimationFrame(() => {
+                        window.location.href = '../index.html'
+                    })
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            async toPageLogin() {
+                const res = await loginoutApi()
+                if (res.code === 1) {
+                    window.requestAnimationFrame(() => {
+                        window.location.href = 'login.html'
+                    })
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            }
+        }
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/user2.css"/>
+</head>
+<body>
+<div id="user" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>与客服聊天
+        </div>
+    </div>
+    <div class="divContent" style="text-align: center;">
+        <div class="wrapper">
+            <div class="header">瑞吉客服</div>
+            <div class="content">
+                <div class="mine clearfix">
+                    <!-- <img class="avator" src="../images/3.png" alt="">
+                    <div class="text">你好，小渡</div> -->
+                </div>
+                <div class="robot" style="text-align: left;">
+                    <img class="avator" src="../images/dog1.jpg" alt="">
+                    <div class="text">你好，我是你的智能机器人，快来找我聊天吧！</div>
+                </div>
+            </div>
+            <div class="input-box">
+                <input type="text" id="send-text">
+                <button id="send-btn" onclick="addchat()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../api/login.js"></script>
+<script>
+
+    new Vue({
+        el: "#user",
+        data() {
+            return {}
+        },
+        computed: {},
+        created() {
+
+        },
+        mounted() {
+
+        },
+        methods: {
+            goBack() {
+                history.go(-1);
+            }
+        }
+    })
+</script>
+<script type="application/javascript">
+
+    var sendText = document.getElementById('send-text');
+
+    function addchat() {
+        renderDom('mine', sendText.value);
+        axios.get('http://localhost:8080/tulingchat?text=' + sendText.value).then(function (res) {
+            console.log(res);
+            renderDom('robot', res.data.data)
+        });
+        sendText.value = "";
+    }
+
+    // 渲染对话内容
+    /**
+     *
+     * @param {String} who   可选值： mine / robot
+     * @param {String} text
+     */
+    function renderDom(who, text) {
+        // 当前对话框的class类名
+        var divClass = who;
+        // 当前对话框的头像
+        var avatorImg = ""
+        if (who === 'mine') {
+            divClass += ' clearfix';
+            avatorImg = "../images/3.png";
+        } else {
+            avatorImg = "../images/dog1.jpg";
+        }
+        var oDiv = document.createElement('div');
+        oDiv.className = divClass;
+        oDiv.style = "text-align: left;"
+        oDiv.innerHTML = `<img class="avator" src="${avatorImg}" alt="">
+		    <div class="text">${text}</div>`
+        var content = document.querySelector('.content');
+        content.appendChild(oDiv);
+        content.scrollTop = content.scrollHeight;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--不同屏幕尺寸根字体设置-->
+    <script src="../js/base.js"></script>
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/order.css"/>
+</head>
+<body>
+<div id="order" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>菩提阁
+        </div>
+    </div>
+    <div class="divBody" v-if="orderList.length > 0">
+        <van-list
+                v-model="loading"
+                :finished="finished"
+                finished-text="没有更多了"
+                @load="getList"
+        >
+            <van-cell v-for="(order,index) in orderList" :key="index" class="item">
+                <div class="timeStatus">
+                    <span>{{order.orderTime}}</span>
+                    <span>{{getStatus(order.status)}}</span>
+                    <!-- <span>正在派送</span> -->
+                </div>
+                <div class="dishList">
+                    <div v-for="(item,index) in order.orderDetails" :key="index" class="item">
+                        <span>{{item.name}}</span>
+                        <span>x{{item.number}}</span>
+                    </div>
+                </div>
+                <div class="result">
+                    <span>共{{order.sumNum}} 件商品,实付</span><span class="price">￥{{order.amount}}</span>
+                </div>
+                <div class="btn" style="float: left;" v-if="order.status === 4 && order.remark == 0">
+                    <div class="btnAgain" @click="getShow(order.id)">评论</div>
+                </div>
+                <div class="btn" style="float: left;" v-if="order.status === 4 && order.remark == 1">
+                    <div class="btnAgain" @click="getShow(order.id)">追加评论</div>
+                </div>
+                <div class="btn" v-if="order.status === 4">
+                    <div class="btnAgain" @click="addOrderAgain(order)">再来一单</div>
+                </div>
+                <div class="btn" style="float: left;" v-if="order.status === 2 || order.status === 1">
+                    <div class="btnAgain" @click="toCancel(order.id)">取消订单</div>
+                </div>
+                <div class="btn" v-if="order.status === 1">
+                    <div class="btnAgain" @click="toPay(order.id)">去支付</div>
+                </div>
+                <div class="btn" v-if="order.status === 2 || order.status === 3">
+                    <div class="btnAgain" @click="toComplete(order.id)">立即完成</div>
+                </div>
+                <van-dialog v-model:show="show" title="老板！请给出你的建议！" :before-close="beforeClose" show-cancel-button>
+                    <div style="margin-left: 50px;margin-top: 30px;">您的评分:
+                        <el-rate
+                                v-model="value"
+                                show-text
+                                :texts="['狗都不吃', '勉强能吃', '一般', '好吃', '非常好吃']"
+                                :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
+                                style="margin-left: 50px;"
+                        >
+                        </el-rate>
+                    </div>
+                    <div style="margin-left: 50px;margin-top: 30px; width: 150px;margin-bottom: 30px;">您的评价:
+                        <el-input
+                                type="textarea"
+                                show-word-limit
+                                :autosize="{ minRows: 2, maxRows: 4}"
+                                placeholder="请输入内容"
+                                style="margin-left: 50px;"
+                                v-model="comments">
+                        </el-input>
+                        </el-rate>
+                    </div>
+                </van-dialog>
+                <van-dialog v-model:show="refund" :before-close="beforerefundClose" theme="round-button">
+                    <div style="text-align: left;margin-left: 20px;">
+                        <div style="text-align: center;margin-top: 20px">
+                            <img src="../images/success.png" style="width: 35rem;height: 35rem">
+                        </div>
+                        <div style="margin-top: 20px;font-size: 25px;font-weight: bold;text-align: center">退款成功</div>
+                        <div style="margin-top: 20px;">支付宝交易ID:{{torefund.id}}</div>
+                        <div style="margin-top: 20px;">商家订单ID:{{torefund.orderId}}</div>
+                        <div style="margin-top: 20px;">退款时间:{{torefund.ordertime}}</div>
+                        <div style="margin-top: 20px;margin-bottom: 20px;">退款金额:{{torefund.amount}}</div>
+                    </div>
+                </van-dialog>
+            </van-cell>
+        </van-list>
+    </div>
+    <div class="divNoData" v-else>
+        <div class="divContainer">
+            <img src="../images/no_order.png"/>
+            <div>暂无订单</div>
+        </div>
+    </div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script>
+    new Vue({
+        el: "#order",
+        data() {
+            return {
+                show: false,
+                refund: false,
+                value: null,
+                comments: '',
+                num: undefined,
+                numtemp: undefined,
+                id: '',
+                paging: {
+                    page: 1,
+                    pageSize: 5
+                },
+                orderList: [],
+                loading: false,
+                finished: false,
+                torefund: {
+                    id: '',
+                    orderId: '',
+                    ordertime: '',
+                    amount: ''
+                }
+            }
+        },
+        computed: {},
+        created() {
+            this.initData()
+        },
+        mounted() {
+        },
+        methods: {
+            toPay(Oid) {
+                window.requestAnimationFrame(() => {
+                    window.location.replace('/aliapy/pay/' + Oid)
+                })
+            },
+            toCancel(Oid) {
+                this.$dialog.confirm({
+                    title: '确认取消',
+                    message: '确认取消订单吗？',
+                })
+                    .then(async () => {
+                        const res = await toCancle({id: Oid})
+                        if (res.code === 1) {
+                            this.refund = true;
+                            this.torefund = res.data;
+                        } else if (res.code === 2) {
+                            this.$toast({type: 'success', message: '取消成功'});
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            this.$notify({type: 'warning', message: res.msg});
+
+                        }
+                    })
+                    .catch(() => {
+                    });
+            },
+            toComplete(Oid) {
+                this.$dialog.confirm({
+                    title: '确认收货',
+                    message: '确认收到货了吗？',
+                }).then(async () => {
+                    const res = await toComplete({id: Oid})
+                    if (res.code === 1) {
+                        this.$toast({type: 'success', message: '收货成功'});
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        this.$notify({type: 'warning', message: res.msg});
+                    }
+                })
+                    .catch(() => {
+                    });
+            },
+            getShow(Oid) {
+                this.show = true;
+                this.id = Oid;
+            },
+            beforerefundClose: async function (action, done) { // 点击事件 - 备注按钮提示框
+                if (action === 'confirm') { // 确认
+                    console.log('[点击事件 - 备注] - 确认');
+                    done();
+                    location.reload();
+                    // 关闭提示框
+                } else if (action === 'cancel') { // 取消
+                    console.log('[点击事件 - 备注] - 取消');
+                    done(); // 关闭提示框
+                }
+            },
+            beforeClose: async function (action, done) { // 点击事件 - 备注按钮提示框
+                if (action === 'confirm') { // 确认
+                    console.log('[点击事件 - 备注] - 确认');
+                    const params = {
+                        orderId: this.id,
+                        content: this.comments,
+                        commentsnum: this.value
+                    }
+                    const res = await addComments(params);
+                    if (res.code === 1) {
+                        done();
+                        this.$toast({type: 'success', message: '评价成功'});
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    }
+                    // 关闭提示框
+                } else if (action === 'cancel') { // 取消
+                    console.log('[点击事件 - 备注] - 取消');
+                    done(); // 关闭提示框
+                }
+            },
+            goBack() {
+                const url = document.referrer
+                //表示是从订单页面跳转过来的
+                if (url.includes('success')) {
+                    window.requestAnimationFrame(() => {
+                        window.location.href = '../index.html'
+                    })
+                } else {
+                    history.go(-1)
+                }
+            },
+            initData() {
+                this.getList()
+            },
+            async getList() {
+                if (this.finished) {
+                    this.loading = false;
+                    return
+                }
+                const res = await orderPagingApi(this.paging)
+                if (res.code === 1) {
+                    this.orderList.push(...res.data.records)
+                    let records = res.data.records
+                    if (records && Array.isArray(records)) {
+                        records.forEach(item => {
+                            let number = 0
+                            item.orderDetails.forEach(ele => {
+                                number += ele.number
+                            })
+                            item.numstatus = this.numtemp
+                            item.sumNum = number
+                        })
+                    }
+                    this.loading = false;
+                    if (this.paging.page >= res.data.pages) {
+                        this.finished = true;
+                    }
+                    this.paging.page = this.paging.page + 1
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            async addOrderAgain(order) {
+                const res = await orderAgainApi({id: order.id})
+                if (res.code === 1) {
+                    window.requestAnimationFrame(() => {
+                        window.location.href = '../index.html'
+                    })
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            getStatus(status) {
+                let str = ''
+                switch (status) {
+                    case 1:
+                        str = '待付款'
+                        break;
+                    case 2:
+                        str = '正在派送'
+                        break;
+                    case 3:
+                        str = '已派送'
+                        break;
+                    case 4:
+                        str = '已完成'
+                        break;
+                    case 5:
+                        str = '已取消'
+                        break;
+
+                }
+                return str
+            }
+        }
+    })
+</script>
+</body>
+</html>

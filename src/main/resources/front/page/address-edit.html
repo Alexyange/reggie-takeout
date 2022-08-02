@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--不同屏幕尺寸根字体设置-->
+    <script src="../js/base.js"></script>
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/address-edit.css"/>
+</head>
+<body>
+<div id="address_edit" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>{{title}}
+        </div>
+    </div>
+    <div id="l-map" style="width: 412px;height: 312px;"></div>
+    <div id="searchResultPanel" style="border:1px solid #C0C0C0;width:150px;height:auto; display:none;"></div>
+    <div class="divContent">
+        <div class="divItem">
+            <span>联系人：</span>
+            <el-input placeholder=" 请填写收货人的姓名" v-model="form.consignee" maxlength='10' class="inputUser"/>
+            </el-input>
+            <span class="spanChecked" @click="form.sex = '1'">
+                    <i :class="{iActive:form.sex === '1'}"></i>
+                    先生
+                   </span>
+            <span class="spanChecked" @click="form.sex = '0'">
+                    <i :class="{iActive:form.sex === '0'}"></i>
+                    女士
+                </span>
+        </div>
+        <div class="divItem">
+            <span>手机号：</span>
+            <el-input placeholder=" 请填写收货人手机号码" v-model="form.phone" maxlength='20' style="width: calc(100% - 80rem);"/>
+            </el-input>
+        </div>
+        <div class="divItem">
+            <span>收货地址：</span>
+            <el-input id="suggestId" placeholder=" 请输入收货地址" v-model="form.detail" maxlength='140'/>
+            </el-input>
+        </div>
+        <div class="divItem ">
+            <span>标签：</span>
+            <span v-for="(item,index) in labelList" :key="index" @click="form.label = item;activeIndex = index"
+                  :class="{spanItem:true,spanActiveSchool:activeIndex === index}">{{item}}</span>
+        </div>
+        <div class="divSave" @click="saveAddress">保存地址</div>
+        <div class="divDelete" @click="deleteAddress" v-if="id">删除地址</div>
+    </div>
+</div>
+<!-- 开发环境版本,包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant样式 -->
+<script src="../js/vant.min.js"></script>
+<script src="../js/common.js"></script>
+<script src="../api/address.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script type="text/javascript"
+        src="https://api.map.baidu.com/api?v=2.0&type=webgl&ak=X0x9g2GKXRh9tYyaQgjIU6UyO6GTQPWi"></script>
+<script>
+    new Vue({
+        el: "#address_edit",
+        data() {
+            return {
+                title: '新增收货地址',
+                form: {
+                    consignee: '',//联系人
+                    phone: undefined,//手机号
+                    sex: '1',//0表示女 1 表示男
+                    detail: '',//收货地址
+                    label: '公司',//标签
+                },
+                labelList: [
+                    '无', '公司', '家', '学校'
+                ],
+                id: undefined,
+                activeIndex: 0
+            }
+        },
+        computed: {},
+        created() {
+            this.initData()
+        },
+        mounted() {
+            this.init()
+        },
+        methods: {
+            init() {
+                // 百度地图API功能
+                var map = new BMapGL.Map("l-map");
+                let _this = this;
+                map.centerAndZoom("合肥市", 12);                   // 初始化地图,设置城市和地图级别。
+                var ac = new BMapGL.Autocomplete(    //建立一个自动完成的对象
+                    {
+                        "input": "suggestId"
+                        , "location": map
+                    });
+                ac.addEventListener("onhighlight", function (e) {  //鼠标放在下拉列表上的事件
+                    var str = "";
+                    var _value = e.fromitem.value;
+                    var value = "";
+                    if (e.fromitem.index > -1) {
+                        value = _value.province + _value.city + _value.district + _value.street + _value.business;
+                    }
+                    str = "FromItem<br />index = " + e.fromitem.index + "<br />value = " + value;
+
+                    value = "";
+                    if (e.toitem.index > -1) {
+                        _value = e.toitem.value;
+                        value = _value.province + _value.city + _value.district + _value.street + _value.business;
+                    }
+                    str += "<br />ToItem<br />index = " + e.toitem.index + "<br />value = " + value;
+                    document.getElementById("searchResultPanel").innerHTML = str;
+                    _this.form.detail = value;
+                });
+
+                var myValue;
+                ac.addEventListener("onconfirm", function (e) {    //鼠标点击下拉列表后的事件
+                    var _value = e.item.value;
+                    myValue = _value.province + _value.city + _value.district + _value.street + _value.business;
+                    document.getElementById("searchResultPanel").innerHTML = "onconfirm<br />index = " + e.item.index + "<br />myValue = " + myValue;
+                    map.clearOverlays();    //清除地图上所有覆盖物
+                    function myFun() {
+                        var pp = local.getResults().getPoi(0).point;    //获取第一个智能搜索的结果
+                        map.centerAndZoom(pp, 18);
+                        map.addOverlay(new BMapGL.Marker(pp));    //添加标注
+                    }
+
+                    var local = new BMapGL.LocalSearch(map, { //智能搜索
+                        onSearchComplete: myFun
+                    });
+                    local.search(myValue);
+                });
+                // 创建定位控件
+                var locationControl = new BMapGL.LocationControl({
+                    // 控件的停靠位置（可选，默认左上角）
+                    anchor: BMAP_ANCHOR_TOP_RIGHT,
+                    // 控件基于停靠位置的偏移量（可选）
+                    offset: new BMapGL.Size(20, 20)
+                });
+                // 将控件添加到地图上
+                map.addControl(locationControl);
+
+                // 添加定位事件
+                locationControl.addEventListener("locationSuccess", function (e) {
+                    var address = '';
+                    address += e.addressComponent.province;
+                    address += e.addressComponent.city;
+                    address += e.addressComponent.district;
+                    address += e.addressComponent.street;
+                    address += e.addressComponent.streetNumber;
+                    alert("当前定位地址为：" + address);
+                });
+                locationControl.addEventListener("locationError", function (e) {
+                    alert(e.message);
+                });
+            },
+            goBack() {
+                history.go(-1)
+            },
+            async initData() {
+                const params = parseUrl(window.location.search)
+                this.id = params.id
+                if (params.id) {
+                    this.title = '编辑收货地址'
+                    const res = await addressFindOneApi(params.id)
+                    if (res.code === 1) {
+                        this.form = res.data
+                    } else {
+                        this.$notify({type: 'warning', message: res.msg});
+                    }
+                }
+            },
+            async saveAddress() {
+                const form = this.form
+                if (!form.consignee) {
+                    this.$notify({type: 'warning', message: '请输入联系人'});
+                    return
+                }
+                if (!form.phone) {
+                    this.$notify({type: 'warning', message: '请输入手机号'});
+                    return
+                }
+                if (!form.detail) {
+                    this.$notify({type: 'warning', message: '请输入收货地址'});
+                    return
+                }
+                const reg = /^1[3|4|5|7|8][0-9]{9}$/
+                if (!reg.test(form.phone)) {
+                    this.$notify({type: 'warning', message: '手机号码不合法'});
+                    return
+                }
+                let res = {}
+                if (this.id) {
+                    res = await updateAddressApi(this.form)
+                } else {
+                    res = await addAddressApi(this.form)
+                }
+
+                if (res.code === 1) {
+                    window.requestAnimationFrame(() => {
+                        window.location.replace('/front/page/address.html')
+                    })
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            deleteAddress() {
+                this.$dialog.confirm({
+                    title: '确认删除',
+                    message: '确认要删除当前地址吗？',
+                })
+                    .then(async () => {
+                        const res = await deleteAddressApi({ids: this.id})
+                        if (res.code === 1) {
+                            window.requestAnimationFrame(() => {
+                                window.location.replace('/front/page/address.html')
+                            })
+                        } else {
+                            this.$notify({type: 'warning', message: res.msg});
+                        }
+                    })
+                    .catch(() => {
+                    });
+            },
+        }
+    })
+</script>
+</body>
+</html>

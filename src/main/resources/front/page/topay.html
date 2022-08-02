@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/user3.css"/>
+</head>
+<body>
+<div id="user" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>支付订单
+        </div>
+    </div>
+    <div class="divContent">
+        <div style="text-align: center;margin-top: 20px;font-size: 15px;">
+            <div>支付剩余时间:&nbsp;&nbsp;&nbsp;<span class="timesum"></span></div>
+            <div style="font-size: 50px;">￥{{orders.amount}}</div>
+            <div>菩提阁烤肉</div>
+        </div>
+        <div style="font-size: 18px;color: #82848A;padding-top: 20px;padding-left: 9px;">支付方式</div>
+        <div class="divPay">
+            <van-radio-group v-model="checked">
+                <van-cell-group inset>
+                    <van-cell size="large" title="支付宝" clickable @click="checked = '1'">
+                        <template #right-icon>
+                            <van-radio name="1"/>
+                        </template>
+                    </van-cell>
+                    <van-cell size="large" title="暂无数据" clickable @click="checked = '2'">
+                        <template #right-icon>
+                            <van-radio name="2"/>
+                        </template>
+                    </van-cell>
+                </van-cell-group>
+            </van-radio-group>
+            <div style="color: #000000;margin-top: 20px;font-size: 18px;">
+                <button @click="toOrderPay"
+                        style="background-color: #ffc200;margin-top: 20px;width: 310rem;height: 40rem;margin: 20rem 10rem 0 10rem;border-radius: 20px;border: 0;">
+                    去支付
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../api/login.js"></script>
+<script src="../js/jquery-3.6.0.js"></script>
+<script>
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                checked: '1',
+                id: '',
+                orders: {}
+            }
+        },
+        created() {
+            this.LockButton();
+            this.getId()
+            this.getOrder();
+        },
+        mounted() {
+        },
+        methods: {
+            async toOrderPay() {
+                if (this.checked == '2') {
+
+                } else if (this.checked == '1') {
+                    window.requestAnimationFrame(() => {
+                        window.location.replace('/aliapy/pay/' + this.id)
+                    })
+                }
+            },
+            getId() {
+                const query = location.search.substring(1)
+                const temp = query.split("=")
+                this.id = temp[1]
+            },
+            async getOrder() {
+                const res = await getOrders({id: this.id})
+                if (res.code === 1) {
+                    this.orders = res.data;
+                    console.log(res)
+                }
+            },
+            goBack() {
+                history.go(-1)
+            },
+            LockButton() {
+                var maxtime;
+                if (window.name == '') {
+                    maxtime = 15 * 60;
+                } else {
+                    maxtime = window.name;
+                }
+                setTime = setInterval(function () {
+                    if (maxtime >= 0) {
+                        var minutes = Math.floor(maxtime / 60);
+                        var seconds = Math.floor(maxtime % 60);
+                        if (seconds < 10) {
+                            $('.timesum').html(minutes + ":0" + seconds);
+                        }
+                        if (minutes < 10) {
+                            $('.timesum').html("0" + minutes + ":" + seconds);
+                        }
+                        if (seconds < 10 && minutes < 10) {
+                            $('.timesum').html("0" + minutes + ":0" + seconds);
+                        }
+                        if (seconds > 10 && minutes > 10) {
+                            $('.timesum').html(minutes + ":" + seconds);
+                        }
+                        --maxtime;
+                        window.name = maxtime;
+                    } else {
+                        clearInterval(setTime);
+                        //下一步操作
+                        window.name = ''
+
+                    }
+                }, 1000);
+            },
+
+        }
+    })
+</script>
+</body>
+</html>

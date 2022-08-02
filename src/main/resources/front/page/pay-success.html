@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--不同屏幕尺寸根字体设置-->
+    <script src="../js/base.js"></script>
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/pay-success.css"/>
+</head>
+<body>
+<div id="pay_success" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>
+            菩提阁
+            <img src="../images/home.png" @click="toMainPage"/>
+        </div>
+    </div>
+    <div id="mapapp" style="width: 412px;height: 312px;"></div>
+    <div class="divContent">
+        <div class="divSuccess">请稍等，外卖即将送达</div>
+        <div class="divDesc">距离用户{{distance}},预计{{finishTime}}分钟后到达</div>
+        <div class="divDesc1">后厨正在加紧制作中，请耐心等待~</div>
+        <div class="btnView" @click="toOrderPage">查看订单</div>
+    </div>
+</div>
+<script type="text/javascript"
+        src="https://api.map.baidu.com/api?v=1.0&type=webgl&ak=X0x9g2GKXRh9tYyaQgjIU6UyO6GTQPWi"></script>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script>
+    new Vue({
+        el: "#pay_success",
+        data() {
+            return {
+                finishTime: '',
+                distance: '',
+                xPoint: '',
+                yPoint: '',
+                id: '',
+                orderId: '',
+                tips: 0
+            }
+        },
+        computed: {},
+        created() {
+        },
+        mounted() {
+            this.getId()
+        },
+        methods: {
+            async toUpdateOrder(distance) {
+                var temp = distance.split("公")
+                if (temp[0] < 5) {
+                    this.tips = 6
+                } else if (temp[0] < 10) {
+                    this.tips = 9
+                } else if (temp[0] > 10) {
+                    this.tips = 15
+                }
+                const res = await toUpdateOrders({tips: this.tips, id: this.orderId})
+                if (res === 1) {
+
+                }
+            },
+            getId() {
+                const query = location.search.substring(1)
+                const temp = query.split("=")
+                this.orderId = temp[2]
+                this.id = temp[1]
+                setTimeout(() => {
+                    this.$toast({type: 'success', message: '下单成功'});
+                }, 2000);
+                this.init()
+            },
+            goBack() {
+                window.requestAnimationFrame(() => {
+                    window.location.replace('/front/index.html')
+                })
+            },
+            toOrderPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.replace('/front/page/order.html')
+                })
+            },
+            toMainPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.replace('/front/index.html')
+                })
+            },
+            async init() {
+                var _this = this;
+                var map = new BMapGL.Map("mapapp");
+                map.centerAndZoom(new BMapGL.Point(116.404, 39.915), 12);
+                var output = "";
+                var searchComplete = function (results) {
+                    if (transit.getStatus() != BMAP_STATUS_SUCCESS) {
+                        return;
+                    }
+                    var plan = results.getPlan(0);
+                    var distance = plan.getDistance(true);             //获取距离
+                    _this.getFinishTime(distance);
+                    _this.toUpdateOrder(distance)
+                }
+                const res = await getAddress({id: this.id})
+                if (res.code === 1) {
+                    this.xPoint = res.data.xpoint;
+                    this.yPoint = res.data.ypoint;
+                }
+                var transit = new BMapGL.DrivingRoute(map, {
+                    renderOptions: {map: map},
+                    onSearchComplete: searchComplete,
+                    onPolylinesSet: function () {
+                        //setTimeout(function(){alert(output)},"1000");
+                    }
+                });
+                var start = new BMapGL.Point(117.323619, 31.891059);//商家地址默认为火车站
+                var end = new BMapGL.Point(this.yPoint, this.xPoint);
+                transit.search(start, end);
+
+            },
+            //获取送达时间
+            getFinishTime(distance) {
+                this.distance = distance;
+                let now = new Date()
+                var temp = distance.split("公")
+                if (temp[0] < 5) {
+                    this.finishTime = 30
+                    this.tips = 6
+                } else if (temp[0] < 10) {
+                    this.tips = 9
+                    this.finishTime = 45
+                } else if (temp[0] > 10) {
+                    this.tips = 15
+                    this.finishTime = 55
+                }
+            },
+
+        }
+    })
+</script>
+</body>
+</html>

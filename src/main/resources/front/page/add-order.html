@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--不同屏幕尺寸根字体设置-->
+    <script src="../js/base.js"></script>
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/add-order.css"/>
+</head>
+<body>
+<div id="add_order" class="app">
+    <div class="divHead">
+        <div class="divTitle">
+            <i class="el-icon-arrow-left" @click="goBack"></i>菩提阁
+        </div>
+    </div>
+    <div class="divContent">
+        <div class="divAddress">
+            <div @click="toAddressPage">
+                <div class="address">{{address.detail}}</div>
+                <div class="name">
+                    <span>{{address.consignee}}{{address.sex === '1' ? '先生':'女士'}}</span>
+                    <span>{{address.phone}}</span>
+                </div>
+                <i class="el-icon-arrow-right"></i>
+            </div>
+            <div class="divSplit"></div>
+            <div class="divFinishTime">预计{{finishTime}}送达</div>
+        </div>
+        <div class="order">
+            <div class="title">订单明细</div>
+            <div class="divSplit"></div>
+            <div class="itemList">
+                <div class="item" v-for="(item,index) in cartData" :key="index">
+                    <el-image :src="imgPathConvert(item.image)">
+                        <div slot="error" class="image-slot">
+                            <img src="../images/noImg.png"/>
+                        </div>
+                    </el-image>
+                    <div class="desc">
+                        <div class="name">{{item.name}}</div>
+                        <div class="numPrice">
+                            <span class="num">x{{item.number}}</span>
+                            <div class="price">
+                                <span class="spanMoney">￥</span>{{item.amount}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="divSplit"></div>
+            <div class="foot">已优惠￥{{couponpay}} 实付￥{{goodsPrice-couponpay}}</div>
+        </div>
+        <van-cell is-link @click="showListMethod">优惠券选择</van-cell>
+        <!-- 优惠券单元格 -->
+        <!-- <van-coupon-cell
+          :coupons="coupons"
+          :chosen-coupon="chosenCoupon"
+          @click="showList"
+        /> -->
+        <!-- 优惠券列表 -->
+        <van-popup
+                v-model="showList"
+                round
+                position="bottom"
+                style="height: 90%; padding-top: 4px;"
+        >
+            <van-coupon-list
+                    :coupons="coupons"
+                    :chosen-coupon="chosenCoupon"
+                    :disabled-coupons="disabledCoupons"
+                    @change="onChange"
+                    @exchange="onExchange"
+            />
+        </van-popup>
+        <div class="note">
+            <div class="title">备注</div>
+            <van-field
+                    v-model="note"
+                    rows="2"
+                    autosize
+                    type="textarea"
+                    maxlength="50"
+                    placeholder="请输入您需要备注的信息"
+                    show-word-limit
+            />
+        </div>
+    </div>
+    <div class="divCart">
+        <div :class="{imgCartActive: cartData && cartData.length > 0, imgCart:!cartData || cartData.length<1}"></div>
+        <div :class="{divGoodsNum:1===1, moreGoods:cartData && cartData.length > 99}"
+             v-if="cartData && cartData.length > 0">{{ goodsNum }}
+        </div>
+        <div class="divNum">
+            <span>￥</span>
+            <span>{{goodsPrice-couponpay}}</span>
+        </div>
+        <div class="divPrice"></div>
+        <div :class="{btnSubmitActive: cartData && cartData.length > 0, btnSubmit:!cartData || cartData.length<1}"
+             @click="goToPaySuccess">去支付
+        </div>
+    </div>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant样式 -->
+<script src="../js/vant.min.js"></script>
+<script src="../api/address.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../js/common.js"></script>
+<script src="../api/main.js"></script>
+<script src="../api/order.js"></script>
+<script>
+    new Vue({
+        el: "#add_order",
+        data() {
+            return {
+                couponpay: 0,
+                amountcount: 0,
+                amountpay: 0,
+                usecouponid: 0,
+                chosenCoupon: -1,
+                coupons: [],
+                disabledCoupons: [],
+                showList: false,
+                address: {
+                    phone: '',//手机号
+                    consignee: '',//姓名
+                    detail: '',//详细地址
+                    sex: '1',
+                    id: undefined
+                },
+                finishTime: '',//送达时间
+                cartData: [],
+                note: ''//备注信息
+            }
+        },
+        computed: {
+            goodsNum() {
+                let num = 0
+                this.cartData.forEach(item => {
+                    num += item.number
+                })
+                if (num < 99) {
+                    return num
+                } else {
+                    return '99+'
+                }
+            },
+            goodsPrice() {
+                let price = 0;
+                this.cartData.forEach(item => {
+                    price += (item.number * item.amount)
+                });
+                this.amountcount = price;
+                return price
+            },
+        },
+        created() {
+            this.initData()
+        },
+        mounted() {
+        },
+        methods: {
+            showListMethod() {
+                this.showList = true;
+                this.amountpay = this.amountcount;
+                this.coupons = [];
+                this.disabledCoupons = [];
+                this.getItem();
+            },
+            async getItem() {
+                const res = await getCoupons();
+                if (res.code === 1) {
+                    for (var i = 0; i < res.data.length; i++) {
+                        const coupon = {
+                            id: 0,
+                            condition: '无使用门槛\n最多优惠12元',
+                            reason: '',// 不可用原因，优惠券不可用时展示
+                            value: 150,// 折扣券优惠金额，单位分
+                            name: '优惠券名称',// 优惠券名称
+                            startAt: 1489104000,// 卡有效开始时间 (时间戳, 单位秒)
+                            endAt: 1514592000,// 卡失效日期 (时间戳, 单位秒)
+                            valueDesc: '1.5', //优惠券的金额
+                            unitDesc: '元',//优惠券的单位
+                        };
+                        // const coupon = {
+                        //   id: 1, // 优惠券id
+                        //   discount: 0, // 折扣券 折值 整数 为0不显示折
+                        //   denominations: 2000, // 优惠券金额 单位分
+                        //   originCondition: 5000, // 满减规则金额 单位分 为0显示无门槛
+                        //   value: 12, // 折扣券优惠金额，单位分
+                        //   name: '新人大礼包', // 优惠券名称
+                        //   description: '喜欢你就用', // 描述信息
+                        //   reason: '订单未满200元', // 不可用原因，优惠券不可用时展示
+                        //   startAt: parseInt(1556337595530 / 1000), // 卡有效开始时间 (时间戳, 单位秒)
+                        //   endAt: parseInt(1559337595530 / 1000) // 卡失效日期 (时间戳, 单位秒)
+                        // }
+                        coupon.condition = res.data[i].description;
+                        coupon.name = res.data[i].name;
+                        coupon.id = res.data[i].id;
+                        const temp = res.data[i].rules.split("-");
+                        if (temp[0] > this.amountpay) {
+                            coupon.valueDesc = temp[1];
+                            coupon.reason = res.data[i].reason
+                            this.disabledCoupons.push(coupon)
+                        } else {
+                            coupon.valueDesc = temp[1];
+                            this.coupons.push(coupon);
+                        }
+
+                    }
+                }
+            },
+            onChange(index) {
+                this.showList = false;
+                this.usecouponid = this.coupons[index].id;
+                this.couponpay = this.coupons[index].valueDesc;
+                this.amountpay = this.amountpay - this.couponpay;
+            },
+            async onExchange(code) {
+                const params = {
+                    code: code
+                }
+                const res = await addCodeCoupons(params)
+                if (res.code === 1) {
+                    this.coupons = [];
+                    this.getItem();
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            goBack() {
+                history.go(-1)
+            },
+            initData() {
+                //获取默认的地址
+                this.defaultAddress()
+                //获取购物车的商品
+                this.getCartData()
+            },
+            //获取默认地址
+            async defaultAddress() {
+                const res = await getDefaultAddressApi()
+                if (res.code === 1) {
+                    this.address = res.data
+                    this.getFinishTime()
+                } else {
+                    window.requestAnimationFrame(() => {
+                        window.location.href = 'address-edit.html'
+                    })
+                }
+            },
+            //获取送达时间
+            getFinishTime() {
+                let now = new Date()
+                let hour = now.getHours() + 1
+                let minute = now.getMinutes()
+                if (hour.toString().length < 2) {
+                    hour = '0' + hour
+                }
+                if (minute.toString().length < 2) {
+                    minute = '0' + minute
+                }
+                this.finishTime = hour + ':' + minute
+            },
+            toAddressPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'address.html'
+                })
+            },
+            //获取购物车数据
+            async getCartData() {
+                const res = await cartListApi({})
+                if (res.code === 1) {
+                    this.cartData = res.data
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            async goToPaySuccess() {
+                const params = {
+                    remark: this.note,
+                    payMethod: 1,
+                    addressBookId: this.address.id,
+                    amount: this.couponpay
+                }
+                const param = {
+                    id: this.usecouponid
+                }
+                const res = await addOrderApi(params)
+                if (res.code === 1) {
+                    const re = await deleteCoupons(param)
+                    window.requestAnimationFrame(() => {
+                        window.location.replace('topay.html?id=' + res.data.id)
+                    })
+                } else {
+                    this.$notify({type: 'warning', message: res.msg});
+                }
+            },
+            //网络图片路径转换
+            imgPathConvert(path) {
+                return imgPath(path)
+            },
+        }
+    })
+</script>
+</body>
+</html>

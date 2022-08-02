@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁骑手端</title>
+    <link rel="icon" href="../../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/orders.css"/>
+    <style type="text/css">
+        html {
+            height: 100%
+        }
+
+        body {
+            height: 100%;
+            margin: 0px;
+            padding: 0px
+        }
+
+        #mapapp {
+            height: 100%
+        }
+    </style>
+</head>
+<body>
+<div id="user" class="app">
+    <div id="mapapp" style="width: 412px;height: 312px;"></div>
+    <div class="divContent">
+        <div class="divLinks">
+            <van-grid :column-num="3">
+                <van-grid-item>
+                    <div style="font-size: 10rem;color:#A6A9AD ;">配送距离</div>
+                    <div style="font-size: 15rem;color: red;" v-if="order.status == 3">{{distance}}</div>
+                    <div style="font-size: 15rem;color: red;" v-if="order.status != 3">剩余{{distance}}</div>
+                </van-grid-item>
+                <van-grid-item>
+                    <div style="font-size: 10rem;color:#A6A9AD ;">付款方式</div>
+                    <div style="font-size: 15rem;">在线支付</div>
+                </van-grid-item>
+                <van-grid-item>
+                    <div style="font-size: 10rem;color:#A6A9AD ;">本单收入</div>
+                    <div style="color: red;font-size: 15rem;" v-if="order.status == 3">{{order.tips}}元</div>
+                    <div style="color: red;font-size: 15rem;" v-if="order.status != 3">预估收入{{order.tips}}元</div>
+                </van-grid-item>
+            </van-grid>
+            <div style="margin: 20rem;">
+                <div style="float: left;font-size: 20rem;font-weight: bold;">取：</div>
+                <div style="font-size: 20rem;">{{order.address1}}</div>
+            </div>
+            <div style="margin-left: 20rem;">
+                <div style="float: left;font-size: 20rem;font-weight: bold;">送：</div>
+                <div style="font-size: 20rem;">{{order.address2}}</div>
+            </div>
+            <div style="clear:both;margin-top: 35px;">
+                <van-divider
+                        :style="{ color: '#3389fa', borderColor: '#3389fa'}"
+                ></van-divider>
+            </div>
+            <div style="font-size: 13rem; color: #00aa00; width: 150rem;height: 25rem;border: #00aa00 solid;border-radius: 6rem;text-align: center;float: left;">
+                店家电话：13795953737
+            </div>
+            <div style="position: absolute;right: 20rem;  font-size: 13rem; color: #00aa00; width: 150rem;height: 25rem;border: #00aa00 solid;border-radius: 6rem;text-align: center;">
+                客户电话：{{order.phone}}
+            </div>
+            <div style="clear: both;height: 35rem; margin-top: 70rem;">
+                <van-notice-bar>
+                    <span style="font-weight: bold;">订单备注：</span>不要辣
+                </van-notice-bar>
+            </div>
+            <div style="clear: both;height: 35rem; margin-top: 20rem;" v-if="order.status == 1">
+                <van-button round type="primary" size="large" @click="toMeal(order.id)">确定取餐</van-button>
+            </div>
+            <div style="clear: both;height: 35rem; margin-top: 20rem;" v-if="order.status == 2">
+                <van-button round type="danger" size="large" @click="toComplete(order.id)">确定送达</van-button>
+            </div>
+            <div style="clear: both;height: 35rem; margin-top: 20rem;" v-if="order.status == 3">
+                <van-button round type="primary" size="large" disabled>订单已送达</van-button>
+            </div>
+        </div>
+    </div>
+
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../js/jquery-3.6.0.js"></script>
+<script type="text/javascript"
+        src="https://api.map.baidu.com/api?v=1.0&type=webgl&ak=X0x9g2GKXRh9tYyaQgjIU6UyO6GTQPWi"></script>
+<script>
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                orderId: '',
+                order: {},
+                distance: ''
+            }
+        },
+        created() {
+
+        },
+        mounted() {
+            this.getOrder()
+        },
+        methods: {
+            async toMeal(id) {
+                const res = await toMeal(this.orderId)
+                if (res.code === 1) {
+                    this.order.status = 2
+                    this.$toast({type: 'success', message: '取餐成功'});
+                }
+            },
+            async getOrder() {
+                const query = location.search.substring(1)
+                const temp = query.split("=")
+                this.orderId = temp[1]
+                const res = await getOrderData(this.orderId)
+                if (res.code === 1) {
+                    this.order = res.data
+                    this.init();
+                }
+            },
+            async toComplete() {
+                const res = await toComplete(this.orderId)
+                if (res.code === 1) {
+                    this.order.status = 3
+                    this.$toast({type: 'success', message: '订单已完成'});
+                }
+            },
+            goBack() {
+                history.go(-1)
+            },
+            init() {
+                var _this = this;
+                var map = new BMapGL.Map("mapapp");
+                map.centerAndZoom(new BMapGL.Point(116.404, 39.915), 12);
+                var output = "";
+                var searchComplete = function (results) {
+                    if (transit.getStatus() != BMAP_STATUS_SUCCESS) {
+                        return;
+                    }
+                    var plan = results.getPlan(0);
+                    var distance = plan.getDistance(true);
+                    _this.distance = distance//获取距离
+                }
+                var transit = new BMapGL.DrivingRoute(map, {
+                    renderOptions: {map: map},
+                    onSearchComplete: searchComplete,
+                    onPolylinesSet: function () {
+                        //setTimeout(function(){alert(output)},"1000");
+                    }
+                });
+                var start = new BMapGL.Point(117.323619, 31.891059);//商家地址默认为火车站
+                var end = new BMapGL.Point(this.order.ypoint, this.order.xpoint);
+                transit.search(start, end);
+            },
+
+        }
+    })
+</script>
+</body>
+</html>

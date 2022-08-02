@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no,minimal-ui">
+    <title>菩提阁</title>
+    <link rel="icon" href="../images/favico.ico">
+    <!--element-ui的样式-->
+    <link rel="stylesheet" href="../../backend/plugins/element-ui/index.css"/>
+    <!-- 引入样式  -->
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <!--引入vant样式-->
+    <link rel="stylesheet" href="../styles/vant.min.css"/>
+    <!--本页面内容的样式-->
+    <link rel="stylesheet" href="../styles/user3.css"/>
+</head>
+<body>
+<div id="user" class="app">
+    <van-pull-refresh v-model="isLoading" @refresh="onRefresh" success-text="刷新成功">
+
+        <van-popup v-model="showPicker" round position="bottom">
+            <van-picker
+                    show-toolbar
+                    :columns="columns"
+                    default-index="0"
+                    item-height="30"
+                    @cancel="showPicker = false"
+                    @confirm="onConfirm"
+            />
+        </van-popup>
+        <div class="divHead">
+            <div class="divTitle">
+                <i class="el-icon-arrow-left" @click="goBack"></i>个人资料
+            </div>
+        </div>
+        <div class="divContent">
+            <div style="font-size: 18px;color: #82848A;padding-top: 6px;padding-left: 9px;">基础信息</div>
+            <div class="divLinks">
+
+                <div class="item">
+                    <el-upload
+                            class="avatar-uploader"
+                            action="/common/upload"
+                            :show-file-list="false"
+                            :on-success="handleAvatarSuccess"
+                            :on-change="onChange"
+                            ref="upload">
+                        <span style="font-size: 17px;">头像</span>
+                        <van-image
+                                round
+                                width="40rem"
+                                height="40rem"
+                                :src="getImage(userInfo.image)"
+                                style="position: absolute;right: 17px;margin-top: 5px;"
+                        />
+                    </el-upload>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item" @click="toUserNamePage">
+                    <span style="font-size: 17px;">账号名称</span>
+                    <div style="color: #707070;position: absolute;right: 17px;">
+                        {{userInfo.userName}}
+                    </div>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item" @click="showPicker=true">
+                    <span style="font-size: 17px;">性别</span>
+                    <div style="color: #707070;position: absolute;right: 17px;">
+                        <span v-if="userInfo.sex==1">男</span>
+                        <span v-if="userInfo.sex==0">女</span>
+                    </div>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item" @click="toIdNumPage">
+                    <span style="font-size: 17px;">实名信息</span>
+                    <div style="color: #707070;position: absolute;right: 17px;">
+                        {{idNumS}}
+                    </div>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+            </div>
+            <div style="font-size: 18px;color: #82848A;padding-top: 6px;padding-left: 9px;">账号绑定</div>
+            <div class="divLinks2">
+                <div class="item" @click="toUserPhonePage">
+                    <span style="font-size: 17px;">电话号码</span>
+                    <div style="color: #707070;position: absolute;right: 17px;">
+                        {{phoneS}}
+                    </div>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item" @click="toUserEmailPage">
+                    <span style="font-size: 17px;">邮箱</span>
+                    <div style="color: #1989FA;position: absolute;right: 17px;">
+                        {{userInfo.email}}
+                    </div>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item" @click="toUserPwdPage">
+                    <span style="font-size: 17px;">更改密码</span>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item">
+                    <span style="font-size: 17px;">微信</span>
+                    <div style="color: #1989FA;position: absolute;right: 17px;">
+                        未绑定
+                    </div>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+                <div class="divSplit"></div>
+                <div class="item">
+                    <span style="font-size: 17px;">QQ</span>
+                    <div style="color: #1989FA;position: absolute;right: 17px;">
+                        未绑定
+                    </div>
+                    <i class="el-icon-arrow-right"></i>
+                </div>
+            </div>
+        </div>
+    </van-pull-refresh>
+</div>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../../backend/plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../../backend/plugins/element-ui/index.js"></script>
+<!-- 引入vant组件 -->
+<script src="../js/vant.min.js"></script>
+<!--不同屏幕尺寸根字体设置-->
+<script src="../js/base.js"></script>
+<!-- 引入axios -->
+<script src="../../backend/plugins/axios/axios.min.js"></script>
+<script src="../js/request.js"></script>
+<script src="../api/order.js"></script>
+<script src="../api/login.js"></script>
+<script>
+    new Vue({
+        el: "#user",
+        data() {
+            return {
+                userInfo: {
+                    userName: '',
+                    sex: '',
+                    image: '',
+                    IdNum: '',
+                    id: '',
+                    email: ''
+                },
+                idNumS: '',
+                imageUrl: '',
+                phoneS: '',
+                msgFlag: false,
+                showPicker: false,
+                columns: ['男', '女'],
+                isLoading: false,
+            }
+        },
+        computed: {},
+        created() {
+            this.userPhone = sessionStorage.getItem("userPhone");
+            this.phoneS = this.userPhone.substring(0, 3) + "****" + this.userPhone.substring(7, 11);
+            this.getByUser();
+        },
+        mounted() {
+
+        },
+        methods: {
+            onRefresh() {
+                setTimeout(() => {
+                    this.isLoading = false;
+                }, 1000);
+            },
+            getImage(image) {
+                return `/common/download?name=${image}`
+            },
+            async handleAvatarSuccess(response, file, fileList) {
+                if (response.code === 0 && response.msg === '未登录') {
+                    window.top.location.href = '/front/page/login.html'
+                } else {
+                    this.imageUrl = `/common/download?name=${response.data}`
+                    const userinfo = {
+                        phone: this.userPhone,
+                        avatar: response.data
+                    }
+                    const res = await updateByPhone(userinfo)
+                    if (res.code === 1) {
+                        this.getByUser();
+                    }
+                }
+            },
+
+            onChange(file) {
+                if (file) {
+                    const suffix = file.name.split('.')[1]
+                    const size = file.size / 1024 / 1024 < 2
+                    if (['png', 'jpeg', 'jpg'].indexOf(suffix) < 0) {
+                        this.$message.error('上传图片只支持 png、jpeg、jpg 格式！')
+                        this.$refs.upload.clearFiles()
+                        return false
+                    }
+                    if (!size) {
+                        this.$message.error('上传文件大小不能超过 2MB!')
+                        return false
+                    }
+                    return file
+                }
+            },
+            async onConfirm(value, index) {
+                console.log(`当前值：${value}, 当前索引：${index}`);
+                let i = 0
+                if (value === '男') {
+                    i = 1
+                }
+                const userinfo = {
+                    phone: this.userPhone,
+                    sex: i
+                }
+                const res = await updateByPhone(userinfo)
+                if (res.code === 1) {
+                    this.showPicker = false
+                    this.getByUser();
+                }
+            },
+            onCancel() {
+                console.log('取消');
+            },
+            async getByUser() {
+                const params = {
+                    phone: this.userPhone
+                }
+                const res = await getUser(params);
+                if (res.code === 1) {
+                    this.userInfo.userName = res.data.name;
+                    this.userInfo.id = res.data.id;
+                    this.userInfo.idNum = res.data.idNumber;
+                    this.userInfo.sex = res.data.sex;
+                    this.userInfo.image = res.data.avatar;
+                    if (this.userInfo.IdNum != null) {
+                        this.idNumS = this.userInfo.idNum.substring(0, 6) + "********" + this.userInfo.idNum.substring(14, 18);
+                    }
+                    this.userInfo.email = res.data.email;
+                }
+            },
+            goBack() {
+                history.go(-1)
+            },
+            toUserPwdPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'pwd.html'
+                })
+            },
+            toUserEmailPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'email.html'
+                })
+            },
+            toUserPhonePage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'phone.html'
+                })
+            },
+            toUserNamePage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'username.html'
+                })
+            },
+            toSexPage() {
+                window.requestAnimationFrame(() => {
+                })
+            },
+            toIdNumPage() {
+                window.requestAnimationFrame(() => {
+                    window.location.href = 'idnum.html'
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>

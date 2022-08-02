@@ -1,0 +1,58 @@
+{
+  "id": "",
+  "name": "",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "5712920",
+      "name": "统计",
+      "font_class": "tongji",
+      "unicode": "e61b",
+      "unicode_decimal": 58907
+    },
+    {
+      "icon_id": "7127389",
+      "name": "统计",
+      "font_class": "tongji1",
+      "unicode": "e609",
+      "unicode_decimal": 58889
+    },
+    {
+      "icon_id": "8624597",
+      "name": "订单明细",
+      "font_class": "dingdanmingxi",
+      "unicode": "e640",
+      "unicode_decimal": 58944
+    },
+    {
+      "icon_id": "9144645",
+      "name": "icon_套餐管理",
+      "font_class": "icon_taocanguanli",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
+      "icon_id": "9989459",
+      "name": "菜品管理",
+      "font_class": "caipinguanli",
+      "unicode": "e61c",
+      "unicode_decimal": 58908
+    },
+    {
+      "icon_id": "15188145",
+      "name": "员工管理",
+      "font_class": "yuangongguanli",
+      "unicode": "e60d",
+      "unicode_decimal": 58893
+    },
+    {
+      "icon_id": "24994295",
+      "name": "分类管理",
+      "font_class": "fenleiguanli",
+      "unicode": "e64c",
+      "unicode_decimal": 58956
+    }
+  ]
+}
